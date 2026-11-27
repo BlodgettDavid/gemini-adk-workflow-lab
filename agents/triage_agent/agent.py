@@ -1,12 +1,25 @@
-import os
-from google.adk.agents.llm_agent import Agent
+"""Root coordinator agent for CS & Software Engineering Support Triage."""
 
-DEFAULT_MODEL = "gemini-3.8-flash"
-model_name = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+from google.adk.agents import Agent
+
+from .config import get_model_name
+from .sub_agents import concept_agent, debugging_agent, setup_agent
+from .tools import classify_request_priority
 
 root_agent = Agent(
-    model=model_name,
-    name="root_agent",
-    description="A helpful assistant for user questions.",
-    instruction="Answer user questions to the best of your knowledge",
+    name="triage_coordinator",
+    model=get_model_name(),
+    description="Routes incoming CS and software engineering requests to specialist sub-agents.",
+    instruction=(
+        "You are the intake triage coordinator for a CS and Software Engineering support desk. "
+        "For every incoming request:\n"
+        "1. Call classify_request_priority to assess category and urgency.\n"
+        "2. Delegate to the matching specialist sub-agent:\n"
+        "   - debugging_agent for tracebacks, test failures, and code bugs.\n"
+        "   - setup_agent for virtual environments, package installs, Git, and CLI setup.\n"
+        "   - concept_agent for algorithms, architecture, and conceptual explanations.\n"
+        "Do not answer specialist technical questions yourself when a sub-agent applies."
+    ),
+    tools=[classify_request_priority],
+    sub_agents=[debugging_agent, concept_agent, setup_agent],
 )
